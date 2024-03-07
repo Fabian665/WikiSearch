@@ -2,12 +2,11 @@ import sys
 from collections import Counter, OrderedDict
 import itertools
 from itertools import islice, count, groupby
-import pandas as pd
 import os
 import re
 from operator import itemgetter
 from time import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import pickle
 from google.cloud import storage
 from collections import defaultdict
@@ -59,7 +58,7 @@ class MultiFileWriter:
 class MultiFileReader:
     """ Sequential binary reader of multiple files of up to BLOCK_SIZE each. """
     def __init__(self, base_dir, bucket_name=None):
-        self._base_dir = Path(base_dir)
+        self._base_dir = PurePosixPath(base_dir)
         self._bucket = None if bucket_name is None else get_bucket(bucket_name)
         self._open_files = {}
 
