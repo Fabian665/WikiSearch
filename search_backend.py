@@ -85,7 +85,7 @@ class Search:
             for token in tokens
         }
 
-        bm25_title = BM25(token_pl_title, self.inverted_title, k1=1.2, b=0.5)
+        bm25_title = BM25(token_pl_title, self.inverted_title, k1=1.1, b=0.5)
         bm25_text = BM25(token_pl_text, self.inverted_text, k1=1.2, b=0.5)
 
         scores_title = bm25_title.calculate_bm25()
@@ -97,4 +97,4 @@ class Search:
         scores = list(map(lambda x: (x[0], sqrt(pagerank_normalized.get(x[0], 0.2) + 1) * (x[1] ** 3) * self.page_views.get(x[0], 3.7e-6)), scores))
 
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
-        return scores[:100]
+        return [(str(doc_id), score) for doc_id, score in scores[:100]]
