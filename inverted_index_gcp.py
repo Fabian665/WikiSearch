@@ -216,24 +216,6 @@ class InvertedIndex:
                 tf = int.from_bytes(b[i*TUPLE_SIZE+4:(i+1)*TUPLE_SIZE], 'big')
                 posting_list.append((doc_id, tf))
         return posting_list
-    
-    def get_tf_in_doc(self, w, doc_id, bucket_name=None):
-        data = self.read_a_posting_list(base_dif, w, bucket_name)
-        low = 0
-        high = len(data)
-        
-        while low <= high:
-            mid = (low + high) // 2
-            if data[mid][0] == target_doc_id:
-                return data[mid]
-            elif data[mid][0] < target_doc_id:
-                low = mid + 1
-            else:
-                high = mid - 1
-
-        return None  
-            
-    
 
     @staticmethod
     def write_a_posting_list(b_w_pl, base_dir, bucket_name=None):
