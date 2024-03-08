@@ -12,6 +12,7 @@ from google.cloud import storage
 from collections import defaultdict
 from contextlib import closing
 import numpy as np
+from math import log
 
 PROJECT_ID = 'YOUR-PROJECT-ID-HERE'
 def get_bucket(bucket_name):
