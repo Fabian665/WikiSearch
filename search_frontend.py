@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from search_backend import search_query
+import search_backend as se
 
 class MyFlaskApp(Flask):
     def run(self, host=None, port=None, debug=None, **options):
@@ -8,6 +8,7 @@ class MyFlaskApp(Flask):
 app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
+search_query = se.Search()
 
 @app.route("/search")
 def search():
@@ -32,7 +33,7 @@ def search():
     if len(query) == 0:
       return jsonify(res)
     # BEGIN SOLUTION
-    res = search_query(query)
+    res = search_query.search_query(query, search_query.inverted_text.pagerank_normalized)
     # END SOLUTION
     return jsonify(res)
 
