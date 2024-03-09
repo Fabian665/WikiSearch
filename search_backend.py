@@ -1,5 +1,5 @@
 import nltk
-from nltk.stem.porter import *
+from gensim.parsing.porter import PorterStemmer
 from nltk.corpus import stopwords
 import re
 from math import sqrt
@@ -10,7 +10,7 @@ from utils import *
 
 
 class Search:
-    BUCKET_NAME = 'bgu-ir-ass3-fab'
+    BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
     PROJECT_NAME = 'ir-ass3-414111'
 
     def __init__(self) -> None:
@@ -22,9 +22,11 @@ class Search:
 
         self.all_stopwords = english_stopwords.union(corpus_stopwords)
         self.RE_WORD = re.compile(r"""[\#\@\w](['\-]?\w){2,24}""", re.UNICODE)
-        self.inverted_title = load_pickle('inverted_title_v1.pkl', 'postings_gcp/title', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.inverted_text = load_pickle('inverted_text_v1.pkl', 'postings_gcp/text', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.page_views = load_pickle('pageviews_log.pkl', 'dicts_pickles', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.stemmer = PorterStemmer()
+        self.inverted_title = load_pickle('index_title.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_text = load_pickle('index_text.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.page_views = load_pickle('pageviews_log.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank = load_pickle('pagerank_normalized.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
 
     def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
         """Retrieve the posting list for a query word.
@@ -61,7 +63,7 @@ class Search:
         k1, b = 1.2, 0.5
         return self.calculate_bm25_per_term(token, doc_id_tf, self.inverted_text, k1=k1, b=b)    
 
-    def search_query(self, query: str, pagerank_normalized):
+    def search_query(self, query: str):
         """Query the inverted index.
         Args:
             query: the query string
@@ -72,9 +74,10 @@ class Search:
         Returns:
             a list of tuples (doc_id, score)
         """
+        stemmer = self.stemmer
         print('begin')
         tokens = [token.group() for token in self.RE_WORD.finditer(query.lower())]
-        tokens = [token for token in tokens if token not in self.all_stopwords]
+        tokens = [stemmer.stem(token) for token in tokens if token not in self.all_stopwords]
         print('pl')
         token_pl_title = {
             token: self.retrieve_posting_list(token, self.BUCKET_NAME, self.inverted_title)
@@ -94,7 +97,7 @@ class Search:
         # bm25_text = list(map(lambda x: (x[0], x[1]), bm25_text))
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
-        scores = list(map(lambda x: (x[0], sqrt(pagerank_normalized.get(x[0], 0.2) + 1) * (x[1] ** 3) * self.page_views.get(x[0], 3.7e-6)), scores))
+        scores = list(map(lambda x: (x[0], sqrt(self.pagerank.get(x[0], 0.2) + 1) * (x[1] ** 3) * self.page_views.get(x[0], 3.7e-6)), scores))
 
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return [(str(doc_id), score) for doc_id, score in scores[:100]]
