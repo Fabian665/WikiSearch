@@ -33,7 +33,7 @@ def search():
     if len(query) == 0:
       return jsonify(res)
     # BEGIN SOLUTION
-    res = search_query.search_query(query, search_query.inverted_text.pagerank_normalized)
+    res = search_query.search_query(query)
     # END SOLUTION
     return jsonify(res)
 
