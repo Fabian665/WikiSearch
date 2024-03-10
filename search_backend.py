@@ -63,7 +63,17 @@ class Search:
             the BM25 score
         """
         k1, b = 1.2, 0.5
-        return self.calculate_bm25_per_term(token, doc_id_tf, self.inverted_text, k1=k1, b=b)    
+        return self.calculate_bm25_per_term(token, doc_id_tf, self.inverted_text, k1=k1, b=b)
+    
+    def weights(self, doc_id, bm25_score):
+        pagerank = self.pagerank.get(doc_id, 0.2)
+        page_views = self.page_views.get(doc_id, 3.7e-6)
+
+        adjusted_pagerank = sqrt(pagerank + 1)
+        adjusted_bm25_score = (bm25_score ** 3)
+        adjusted_pageviews = page_views
+        return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
+
 
     def search_query(self, query: str):
         """Query the inverted index.
@@ -99,7 +109,7 @@ class Search:
         # bm25_text = list(map(lambda x: (x[0], x[1]), bm25_text))
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
-        scores = list(map(lambda x: (x[0], sqrt(self.pagerank.get(x[0], 0.2) + 1) * (x[1] ** 3) * self.page_views.get(x[0], 3.7e-6)), scores))
+        scores = list(map(lambda x: (x[0], self.weights(x[0], x[1])), scores))
 
         scores = sorted(scores, key=lambda x: x[1], reverse=True)
         return [(str(doc_id), score) for doc_id, score in scores[:100]]
