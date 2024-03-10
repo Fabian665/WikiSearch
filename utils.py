@@ -2,8 +2,8 @@ import pickle
 from google.cloud import storage
 
 
-def load_pickle(filename, base_dir, bucket_name, project_name):
-    file_path = f"{base_dir}/{filename}"
+def load_pickle(filename, bucket_name, project_name):
+    file_path = f"pickles/{filename}"
     storage_client = storage.Client(project=project_name)
     bucket = storage_client.bucket(bucket_name)
     with bucket.blob(file_path).open('rb') as file:

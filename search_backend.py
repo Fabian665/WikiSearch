@@ -8,6 +8,7 @@ from BM25 import BM25
 from utils import *
 
 
+nltk.download('stopwords')
 
 class Search:
     BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
@@ -23,10 +24,11 @@ class Search:
         self.all_stopwords = english_stopwords.union(corpus_stopwords)
         self.RE_WORD = re.compile(r"""[\#\@\w](['\-]?\w){2,24}""", re.UNICODE)
         self.stemmer = PorterStemmer()
-        self.inverted_title = load_pickle('index_title.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.inverted_text = load_pickle('index_text.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.page_views = load_pickle('pageviews_log.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank = load_pickle('pagerank_normalized.pkl', 'pickles', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_title = load_pickle('index_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_text = load_pickle('index_text.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.page_views = load_pickle('pageviews_log.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank = load_pickle('pagerank_normalized.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank = load_pickle('doc_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
 
     def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
         """Retrieve the posting list for a query word.
