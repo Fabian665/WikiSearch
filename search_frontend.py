@@ -34,6 +34,7 @@ def search():
       return jsonify(res)
     # BEGIN SOLUTION
     res = search_query.search_query(query)
+    [(doc_id, search.doc_title[doc_id]) for doc_id, _ in res]
     # END SOLUTION
     return jsonify(res)
 
