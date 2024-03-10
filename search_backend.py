@@ -28,7 +28,7 @@ class Search:
         self.inverted_text = load_pickle('index_text.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
         self.page_views = load_pickle('pageviews_log.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
         self.pagerank = load_pickle('pagerank_normalized.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank = load_pickle('doc_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.doc_title = load_pickle('doc_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
 
     def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
         """Retrieve the posting list for a query word.
