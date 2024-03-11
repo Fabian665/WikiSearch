@@ -7,6 +7,8 @@ from collections import defaultdict
 from contextlib import closing
 from math import log
 
+from custom_types import PostingList
+
 PROJECT_ID = 'ir-ass3-414111'
 
 
@@ -127,14 +129,18 @@ class InvertedIndex:
         return {w: log(self.corpus_size / df) for w, df in self.df.items()}
 
     def get_idf_bm25(self):
-        """ Calculate the inverse document frequency of each term in the index.
+        """ Calculate the inverse document frequency (bm25 edition) of each term in the index.
         """
         return {w: log((self.corpus_size + 1) / df) for w, df in self.df.items()}
 
     def set_idf(self):
+        """ Set the inverse document frequency of each term in the index.
+        """
         self.idf = self.get_idf()
 
     def set_idf_bm25(self):
+        """ Set the inverse document frequency (bm25 edition) of each term in the index.
+        """
         self.idf_bm25 = self.get_idf_bm25()
 
     def get_normalized_term_freq(self, w, doc_id):
@@ -150,6 +156,8 @@ class InvertedIndex:
         self._write_globals(base_dir, name, bucket_name)
 
     def _write_globals(self, base_dir, name, bucket_name):
+        """ Write the global dictionaries to disk.
+        """
         path = str(Path(base_dir) / f'{name}.pkl')
         bucket = None if bucket_name is None else get_bucket(bucket_name)
         with _open(path, 'wb', bucket) as f:
@@ -178,7 +186,9 @@ class InvertedIndex:
                     posting_list.append((doc_id, tf))
                 yield w, posting_list
 
-    def read_a_posting_list(self, base_dir, w, bucket_name=None):
+    def read_a_posting_list(self, base_dir, w, bucket_name=None) -> PostingList:
+        """ Read a posting list from disk and return it as a list of tuples.
+        """
         posting_list = []
         if not w in self.posting_locs:
             return posting_list
@@ -193,6 +203,8 @@ class InvertedIndex:
 
     @staticmethod
     def write_a_posting_list(b_w_pl, base_dir, bucket_name=None):
+        """ Write a posting list to disk and return the bucket_id.
+        """
         posting_locs = defaultdict(list)
         bucket_id, list_w_pl = b_w_pl
 

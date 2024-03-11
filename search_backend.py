@@ -23,6 +23,8 @@ TITLE_WEIGHT = 0.2
 
 
 class Search:
+    """Search class for the search engine.
+    """
     STEM_BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
     PROJECT_NAME = 'ir-ass3-414111'
 
@@ -45,9 +47,24 @@ class Search:
 
     @staticmethod
     def retrieve_posting_list(query_word: str, bucket_name: str, inverted: InvertedIndex) -> PostingList:
+        """Retrieve a posting list from the inverted index.
+        Args:
+            query_word: the query word.
+            bucket_name: the bucket name.
+            inverted: the inverted index.
+        Returns:
+            The posting list of the query word.
+        """
         return inverted.read_a_posting_list(base_dir='.', w=query_word, bucket_name=bucket_name)
 
     def weights(self, doc_id: DocId, bm25_score: Score) -> Score:
+        """Calculate the score of the given document based on predetermined weights.
+        Args:
+            doc_id: the document id.
+            bm25_score: the BM25 score of the document.
+        Returns:
+            The score of the document.
+            """
         pagerank = self.pagerank.get(doc_id, 0.2)
         page_views = self.page_views.get(doc_id, 3.7e-6)
 
@@ -57,6 +74,17 @@ class Search:
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
 
     def get_scores(self, tokens: Tokens, bucket_name: str, inverted: InvertedIndex, k1: float, b: float, func: Callable=None) -> RankedPostingList:
+        """Get the BM25 scores of the given tokens.
+        Args:
+            tokens: the tokens.
+            bucket_name: the bucket name.
+            inverted: the inverted index.
+            k1: the k1 hyperparameter.
+            b: the b hyperparameter.
+            func: the function to apply to the scores.
+        Return:
+            The BM25 scores of the given tokens.
+        """
         token_pl = {
             token: self.retrieve_posting_list(token, bucket_name, inverted)
             for token in tokens
@@ -68,6 +96,12 @@ class Search:
         return scores
 
     def search_query(self, query: str) -> RankedPostingList:
+        """Search the given query.
+        Args:
+            query: the query.
+        Returns:
+            The ranked posting list of the query.
+        """
         stemmer = self.stemmer
         print('begin')
         tokens = [token.group() for token in self.RE_WORD.finditer(query.lower())]
