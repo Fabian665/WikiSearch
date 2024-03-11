@@ -7,7 +7,7 @@ from nltk.corpus import stopwords
 import re
 from math import sqrt, log
 
-from Types import DocId, Score, PostingList, Tokens
+from custom_types import DocId, Score, PostingList, Tokens
 from inverted_index_gcp import InvertedIndex
 
 from BM25 import BM25

@@ -118,8 +118,8 @@ class InvertedIndex:
         # the number of bytes from the beginning of the file where the posting list
         # starts. 
         self.posting_locs = defaultdict(list)
-        self.corpus_size = 0 # Added manually
-        self.average_doc_length = 0  # Added manually
+        self.corpus_size = 0  # Added manually
+        self.avdl = 0  # Added manually
 
     def get_idf(self):
         """ Calculate the inverse document frequency of each term in the index.

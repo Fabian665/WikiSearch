@@ -2,7 +2,7 @@ import pickle
 from typing import Generator, List, Any
 
 from google.cloud import storage
-from Types import RankedPosting, RankedPostingList
+from custom_types import RankedPosting, RankedPostingList
 
 
 def load_pickle(filename: str, bucket_name: str, project_name: str) -> Any:

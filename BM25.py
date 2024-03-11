@@ -1,6 +1,6 @@
 from typing import Tuple, Dict, List
 
-from Types import PostingList, DocId, Score, RankedPostingList
+from custom_types import PostingList, DocId, Score, RankedPostingList
 from inverted_index_gcp import InvertedIndex
 from utils import reduce_by_key
 
@@ -11,7 +11,7 @@ class BM25:
 
     def __init__(self, token_posting_list: Dict[str, PostingList], inverted_index: InvertedIndex, k1: float = 1.2, b: float = 0.5) -> None:
         self.doc_len = inverted_index.doc_len
-        self.average_doc_length = inverted_index.average_doc_length
+        self.average_doc_length = inverted_index.avdl
         self.idf_bm25 = inverted_index.idf_bm25
         self.token_posting_list = token_posting_list
         self.k1 = k1
