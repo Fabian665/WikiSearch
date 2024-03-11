@@ -39,7 +39,8 @@ class Search:
         self.pagerank = load_pickle('normalized_pagerank_iter10.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
         self.doc_title = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
 
-    def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
+    @staticmethod
+    def retrieve_posting_list(query_word: str, bucket_name: str, inverted):
         return inverted.read_a_posting_list(base_dir='.', w=query_word, bucket_name=bucket_name)
 
     def weights(self, doc_id, bm25_score, def_rank=0.2, def_views=3.7e-6):
