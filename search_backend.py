@@ -80,7 +80,7 @@ class Search:
                    inverted: InvertedIndex,
                    k1: float,
                    b: float,
-                   func: Optional[Callable]=None
+                   func: Optional[Callable] = None
                    ) -> RankedPostingList:
         """Get the BM25 scores of the given tokens.
         Args:
@@ -111,11 +111,9 @@ class Search:
             The ranked posting list of the query.
         """
         stemmer = self.stemmer
-        print('begin')
         tokens = [token.group() for token in self.RE_WORD.finditer(query.lower())]
         tokens = [token for token in tokens if token not in self.all_stopwords]
         stemmed_tokens: Tokens = [stemmer.stem(token) for token in tokens]
-        print('pl')
 
         scores_text = self.get_scores(
             stemmed_tokens,
@@ -136,7 +134,6 @@ class Search:
             sorted_scores = sorted(scores_text, key=itemgetter(1), reverse=True)
             scores_text = sorted(sorted_scores[:MAX_DOC_LEN], key=itemgetter(0), reverse=True)
 
-        print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
         scores = list(map(lambda x: (x[0], self.weights(x[0], x[1])), scores))
 

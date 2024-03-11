@@ -66,7 +66,5 @@ class BM25:
         Returns:
             A list of BM25 scores for the entire corpus.
         """
-        print('claculating BM25')
         postings_lists = self.calculate_bm25_per_posting_list()
-        print('reducing')
         return reduce_by_key(postings_lists)
