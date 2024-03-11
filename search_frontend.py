@@ -10,7 +10,7 @@ class MyFlaskApp(Flask):
 app = MyFlaskApp(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
-search_query = se.Search()
+search_engine = se.Search()
 
 
 @app.route("/search")
@@ -36,8 +36,8 @@ def search():
     if len(query) == 0:
         return jsonify(res)
     # BEGIN SOLUTION
-    res = search_query.search_query(query)
-    res = [(str(doc_id), search.doc_title[doc_id]) for doc_id, _ in res]
+    res = (search_engine.search_query(query))
+    res = [(str(doc_id), search_engine.doc_title[doc_id]) for doc_id, _ in res]
     # END SOLUTION
     return jsonify(res)
 

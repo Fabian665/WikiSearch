@@ -1,13 +1,13 @@
-from typing import List, Tuple, TypeAlias
+from typing import List, Tuple
 
 
 DocId = int
 Tf = int
 Score = float
 
-Posting: TypeAlias = Tuple[DocId, Tf]
-RankedPosting: TypeAlias = Tuple[DocId, Score]
+Posting = Tuple[DocId, Tf]
+RankedPosting = Tuple[DocId, Score]
 
-PostingList: TypeAlias = List[Posting]
-RankedPostingList: TypeAlias = List[RankedPosting]
+PostingList = List[Posting]
+RankedPostingList = List[RankedPosting]
 Tokens = List[str]
