@@ -28,7 +28,7 @@ class Search:
         self.inverted_title = load_pickle('index_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
         self.inverted_text = load_pickle('index_text.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
         self.page_views = load_pickle('pageviews_log.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank = load_pickle('pagerank_normalized.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank = load_pickle('normalized_pagerank_iter10.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
         self.doc_title = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
 
     def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
@@ -114,6 +114,10 @@ class Search:
         
         scores_text = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_text, k1=text_k1, b=text_b, pen=penalize_unm)
         scores_title = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_title, k1=title_k1, b=title_b, func=lambda x: x / title_weight, pen=penalize_unm)
+        if len(scores_text) > 100_000:
+            sorted_scores = sorted(scores_text, key=lambda x: x[1], reverse=True)
+            scores_text = sorted(sorted_scores[:100_000], key=lambda x: x[0], reverse=True)
+
 
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
