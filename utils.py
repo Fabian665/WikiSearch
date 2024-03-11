@@ -1,8 +1,25 @@
 import pickle
+from typing import Generator, List, Any
+
 from google.cloud import storage
+from Types import RankedPosting, RankedPostingList
 
 
-def load_pickle(filename, bucket_name, project_name):
+def load_pickle(filename: str, bucket_name: str, project_name: str) -> Any:
+    """
+    Load a pickled object from a Google Cloud Storage bucket.
+
+    This function retrieves a pickled object from a specified Google Cloud Storage bucket and returns it.
+    The object is expected to be located in the 'pickles' directory of the bucket.
+
+    Args:
+        filename (str): The name of the file to be loaded.
+        bucket_name (str): The name of the Google Cloud Storage bucket where the file is located.
+        project_name (str): The name of the Google Cloud project associated with the bucket.
+
+    Returns:
+        The unpickled object that was stored in the file.
+    """
     file_path = f"pickles/{filename}"
     storage_client = storage.Client(project=project_name)
     bucket = storage_client.bucket(bucket_name)
@@ -10,7 +27,7 @@ def load_pickle(filename, bucket_name, project_name):
         return pickle.loads(file.read())
 
 
-def refresh_items(items, gens, minimum):
+def refresh_items(items: List[RankedPosting], gens: List[Generator[RankedPosting, Any, None]], minimum: int) -> None:
     """Refresh the items list by replacing the minimum item with the next item from the corresponding generator.
     Args:
         items: a list of tuples (doc_id, score)
@@ -25,7 +42,7 @@ def refresh_items(items, gens, minimum):
                 items[index] = (float('inf'), 0)
 
 
-def remove_empty_postings(postings_lists):
+def remove_empty_postings(postings_lists: List[RankedPostingList]) -> None:
     """Remove empty postings lists from a list of postings lists.
     Args:
         postings_lists: a list of postings lists, each postings list is a list of tuples (doc_id, score)
@@ -38,8 +55,8 @@ def remove_empty_postings(postings_lists):
         del postings_lists[bad_index]
 
 
-def reduce_by_key(postings_lists):
-    """Reduce a list of postings lists to a single postings list by summing the socre values of the same doc_id.
+def reduce_by_key(postings_lists: List[RankedPostingList]) -> RankedPostingList:
+    """Reduce a list of postings lists to a single postings list by summing the score values of the same doc_id.
     Args:
         postings_lists: a list of postings lists, each postings list is a list of tuples (doc_id, score)
     Returns:

@@ -1,10 +1,14 @@
 from operator import itemgetter
+from typing import Dict, Callable
 
 import nltk
 from gensim.parsing.porter import PorterStemmer
 from nltk.corpus import stopwords
 import re
 from math import sqrt, log
+
+from Types import DocId, Score, PostingList, Tokens
+from inverted_index_gcp import InvertedIndex
 
 from BM25 import BM25
 from utils import *
@@ -33,26 +37,26 @@ class Search:
         self.all_stopwords = english_stopwords.union(corpus_stopwords)
         self.RE_WORD = re.compile(r"""[\#\@\w](['\-]?\w){2,24}""", re.UNICODE)
         self.stemmer = PorterStemmer()
-        self.inverted_title = load_pickle('index_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.inverted_text = load_pickle('index_text.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.page_views = load_pickle('pageviews_log.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank = load_pickle('normalized_pagerank_iter10.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.doc_title = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_title: InvertedIndex = load_pickle('index_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_text: InvertedIndex = load_pickle('index_text.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.page_views: Dict[DocId, float] = load_pickle('pageviews_log.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank: Dict[DocId, float] = load_pickle('normalized_pagerank_iter10.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.doc_title: Dict[DocId, str] = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
 
     @staticmethod
-    def retrieve_posting_list(query_word: str, bucket_name: str, inverted):
+    def retrieve_posting_list(query_word: str, bucket_name: str, inverted: InvertedIndex) -> PostingList:
         return inverted.read_a_posting_list(base_dir='.', w=query_word, bucket_name=bucket_name)
 
-    def weights(self, doc_id, bm25_score, def_rank=0.2, def_views=3.7e-6):
-        pagerank = self.pagerank.get(doc_id, def_rank)
-        page_views = self.page_views.get(doc_id, def_views)
+    def weights(self, doc_id: DocId, bm25_score: Score) -> Score:
+        pagerank = self.pagerank.get(doc_id, 0.2)
+        page_views = self.page_views.get(doc_id, 3.7e-6)
 
         adjusted_pagerank = sqrt(pagerank + 1)
         adjusted_bm25_score = (bm25_score ** 3)
         adjusted_pageviews = log(page_views, 2)
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
 
-    def get_scores(self, tokens, bucket_name, inverted, k1, b, func=None):
+    def get_scores(self, tokens: Tokens, bucket_name: str, inverted: InvertedIndex, k1: float, b: float, func: Callable=None) -> RankedPostingList:
         token_pl = {
             token: self.retrieve_posting_list(token, bucket_name, inverted)
             for token in tokens
@@ -63,12 +67,12 @@ class Search:
             scores = list(map(lambda x: (x[0], func(x[1])), scores))
         return scores
 
-    def search_query(self, query: str):
+    def search_query(self, query: str) -> RankedPostingList:
         stemmer = self.stemmer
         print('begin')
         tokens = [token.group() for token in self.RE_WORD.finditer(query.lower())]
         tokens = [token for token in tokens if token not in self.all_stopwords]
-        stemmed_tokens = [stemmer.stem(token) for token in tokens]
+        stemmed_tokens: Tokens = [stemmer.stem(token) for token in tokens]
         print('pl')
 
         scores_text = self.get_scores(
@@ -95,4 +99,4 @@ class Search:
         scores = list(map(lambda x: (x[0], self.weights(x[0], x[1])), scores))
 
         scores = sorted(scores, key=itemgetter(1), reverse=True)
-        return [(str(doc_id), score) for doc_id, score in scores[:MAX_DOCS]]
+        return [(doc_id, score) for doc_id, score in scores[:MAX_DOCS]]
