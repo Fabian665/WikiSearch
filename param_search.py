@@ -1,13 +1,10 @@
+import json
 import numpy as np
 from time import time
-
 from sklearn.model_selection import ParameterGrid
-# import inverted_index_gcp
-# import utils
-# import BM25
 import search_backend
 
-param_ranges = {    
+param_ranges = {
 'text_k1': np.arange(0.1, 1.4, 0.25),
     'text_b': np.arange(0, 1.1, 0.25),
     'title_k1': np.arange(0.1, 1.4, 0.25),
@@ -16,7 +13,6 @@ param_ranges = {
     'penalize_unm': np.arange(0, 1.1, 0.25)
 }
 
-import json
 
 with open('queries_train.json', 'rt') as f:
   queries = json.load(f)

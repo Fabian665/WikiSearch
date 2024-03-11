@@ -1,11 +1,5 @@
-import sys
-from collections import Counter, OrderedDict
+from collections import Counter
 import itertools
-from itertools import islice, count, groupby
-import os
-import re
-from operator import itemgetter
-from time import time
 from pathlib import Path, PurePosixPath
 import pickle
 from google.cloud import storage
