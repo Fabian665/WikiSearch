@@ -11,7 +11,12 @@ class BM25:
     UNMEANINGFUL = {'consid', 'could', 'describ', 'done', 'explain', 'find',
                     'identifi', 'known', 'locat', 'might', 'uncov', 'whose'}
 
-    def __init__(self, token_posting_list: Dict[str, PostingList], inverted_index: InvertedIndex, k1: float = 1.2, b: float = 0.5) -> None:
+    def __init__(self,
+                 token_posting_list: Dict[str, PostingList],
+                 inverted_index: InvertedIndex,
+                 k1: float = 1.2,
+                 b: float = 0.5
+                 ) -> None:
         """Initialize the BM25 algorithm.
         Args:
             token_posting_list: a dictionary of token to posting list.
@@ -26,7 +31,10 @@ class BM25:
         self.k1 = k1
         self.b = b
 
-    def calculate_bm25_per_term(self, doc_id_tf: Tuple[DocId, Score], token: str) -> Score:
+    def calculate_bm25_per_term(self,
+                                doc_id_tf: Tuple[DocId, Score],
+                                token: str
+                                ) -> Score:
         """Calculate the BM25 score for a given doc and term.
         Args:
             doc_id_tf: a tuple of doc_id and term frequency.

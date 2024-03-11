@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Dict, Callable
+from typing import Dict, Callable, Optional
 
 import nltk
 from gensim.parsing.porter import PorterStemmer
@@ -27,6 +27,7 @@ class Search:
     """
     STEM_BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
     PROJECT_NAME = 'ir-ass3-414111'
+    BUCKET_PROJECT = STEM_BUCKET_NAME, PROJECT_NAME
 
     def __init__(self) -> None:
         nltk.download('stopwords')
@@ -39,11 +40,11 @@ class Search:
         self.all_stopwords = english_stopwords.union(corpus_stopwords)
         self.RE_WORD = re.compile(r"""[\#\@\w](['\-]?\w){2,24}""", re.UNICODE)
         self.stemmer = PorterStemmer()
-        self.inverted_title: InvertedIndex = load_pickle('index_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.inverted_text: InvertedIndex = load_pickle('index_text.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.page_views: Dict[DocId, float] = load_pickle('pageviews_log.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank: Dict[DocId, float] = load_pickle('normalized_pagerank_iter10.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
-        self.doc_title: Dict[DocId, str] = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_title: InvertedIndex = load_pickle('index_title.pkl', *self.BUCKET_PROJECT)
+        self.inverted_text: InvertedIndex = load_pickle('index_text.pkl', *self.BUCKET_PROJECT)
+        self.page_views: Dict[DocId, float] = load_pickle('pageviews_log.pkl', *self.BUCKET_PROJECT)
+        self.pagerank: Dict[DocId, float] = load_pickle('normalized_pagerank_iter10.pkl', *self.BUCKET_PROJECT)
+        self.doc_title: Dict[DocId, str] = load_pickle('doc_title.pkl', *self.BUCKET_PROJECT)
 
     @staticmethod
     def retrieve_posting_list(query_word: str, bucket_name: str, inverted: InvertedIndex) -> PostingList:
@@ -73,7 +74,14 @@ class Search:
         adjusted_pageviews = log(page_views, 2)
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
 
-    def get_scores(self, tokens: Tokens, bucket_name: str, inverted: InvertedIndex, k1: float, b: float, func: Callable=None) -> RankedPostingList:
+    def get_scores(self,
+                   tokens: Tokens,
+                   bucket_name: str,
+                   inverted: InvertedIndex,
+                   k1: float,
+                   b: float,
+                   func: Optional[Callable]=None
+                   ) -> RankedPostingList:
         """Get the BM25 scores of the given tokens.
         Args:
             tokens: the tokens.

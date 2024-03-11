@@ -1,4 +1,4 @@
-from typing import List, Generator, Tuple, Union, TypeAlias
+from typing import List, Tuple, TypeAlias
 
 
 DocId = int
