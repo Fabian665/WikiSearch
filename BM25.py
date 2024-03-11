@@ -2,6 +2,8 @@ from utils import reduce_by_key
 
 
 class BM25:
+    UNMEANINGFUL = {'consid', 'could', 'describ', 'done', 'explain', 'find',
+                    'identifi', 'known', 'locat', 'might', 'uncov', 'whose'}
     def __init__(self, posting_list, inverted_index, k1=1.2, b=0.5):
         self.doc_len = inverted_index.doc_len
         self.avdl = inverted_index.avdl
@@ -21,7 +23,7 @@ class BM25:
         doc_id, tf = doc_id_tf
         B = (1 - self.b) + (self.b * self.doc_len.get(doc_id, self.avdl))
         tf_ij = ((self.k1 + 1) / (B * self.k1 + tf))
-        return tf_ij * self.idf_bm25[token]
+        return tf_ij * self.idf_bm25[token] * (1 if token not in self.UNMEANINGFUL else 0.75)
 
     def calculate_bm25_per_posting_list(self):
         """Calculate the BM25 score for a posting list.
@@ -39,12 +41,6 @@ class BM25:
             bm25_per_doc.append(curr_term)
         return bm25_per_doc
 
-
-        # postings_lists = []
-        # for token, pl in self.posting_list.items():
-        #     postings_lists.append([(doc_id, self.calculate_bm25_per_term(doc_id_tf, token)) for doc_id, doc_id_tf in pl])
-        # return postings_lists
-
     def calculate_bm25(self):
         """Calculate the BM25 score for a posting list.
         Args:
@@ -52,7 +48,9 @@ class BM25:
         Returns:
             a list of posting lists
         """
+        print('claculating BM25')
         postings_lists = self.calculate_bm25_per_posting_list()
+        print('reducing')
         return reduce_by_key(postings_lists)
 
 

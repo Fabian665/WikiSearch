@@ -11,7 +11,8 @@ from utils import *
 nltk.download('stopwords')
 
 class Search:
-    BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
+    STEM_BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
+    NO_STEM_BUCKET_NAME = 'bgu-ir-ass3-fab'
     PROJECT_NAME = 'ir-ass3-414111'
 
     def __init__(self) -> None:
@@ -24,11 +25,11 @@ class Search:
         self.all_stopwords = english_stopwords.union(corpus_stopwords)
         self.RE_WORD = re.compile(r"""[\#\@\w](['\-]?\w){2,24}""", re.UNICODE)
         self.stemmer = PorterStemmer()
-        self.inverted_title = load_pickle('index_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.inverted_text = load_pickle('index_text.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.page_views = load_pickle('pageviews_log.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.pagerank = load_pickle('pagerank_normalized.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
-        self.doc_title = load_pickle('doc_title.pkl', self.BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_title = load_pickle('index_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.inverted_text = load_pickle('index_text.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.page_views = load_pickle('pageviews_log.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.pagerank = load_pickle('pagerank_normalized.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
+        self.doc_title = load_pickle('doc_title.pkl', self.STEM_BUCKET_NAME, self.PROJECT_NAME)
 
     def retrieve_posting_list(self, query_word: str, bucket_name: str, inverted):
         """Retrieve the posting list for a query word.
@@ -75,6 +76,17 @@ class Search:
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
 
 
+    def get_scores(self, tokens, bucket_name, inverted, **kwargs):
+        token_pl = {
+            token: self.retrieve_posting_list(token, bucket_name, inverted)
+            for token in tokens
+        }
+        bm25 = BM25(token_pl, inverted, k1=kwargs['k1'], b=kwargs['b'])
+        scores = bm25.calculate_bm25()
+        if 'func' in kwargs:
+            scores = list(map(lambda x: (x[0], kwargs['func'](x[1])), scores))
+        return scores
+
     def search_query(self, query: str):
         """Query the inverted index.
         Args:
@@ -89,24 +101,13 @@ class Search:
         stemmer = self.stemmer
         print('begin')
         tokens = [token.group() for token in self.RE_WORD.finditer(query.lower())]
-        tokens = [stemmer.stem(token) for token in tokens if token not in self.all_stopwords]
+        tokens = [token for token in tokens if token not in self.all_stopwords]
+        stemmed_tokens = [stemmer.stem(token) for token in tokens]
         print('pl')
-        token_pl_title = {
-            token: self.retrieve_posting_list(token, self.BUCKET_NAME, self.inverted_title)
-            for token in tokens
-        }
-        token_pl_text = {
-            token: self.retrieve_posting_list(token, self.BUCKET_NAME, self.inverted_text)
-            for token in tokens
-        }
+        
+        scores_text = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_text, k1=1.2, b=0.45)
+        scores_title = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_title, k1=1.1, b=0.5, func=lambda x: x / 1.25)
 
-        bm25_title = BM25(token_pl_title, self.inverted_title, k1=1.1, b=0.5)
-        bm25_text = BM25(token_pl_text, self.inverted_text, k1=1.2, b=0.45)
-
-        scores_title = bm25_title.calculate_bm25()
-        scores_title = list(map(lambda x: (x[0], x[1]), scores_title))
-        scores_text = bm25_text.calculate_bm25()
-        # bm25_text = list(map(lambda x: (x[0], x[1]), bm25_text))
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
         scores = list(map(lambda x: (x[0], self.weights(x[0], x[1])), scores))
