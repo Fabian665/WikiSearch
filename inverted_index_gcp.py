@@ -5,10 +5,9 @@ import pickle
 from google.cloud import storage
 from collections import defaultdict
 from contextlib import closing
-import numpy as np
 from math import log
 
-PROJECT_ID = 'YOUR-PROJECT-ID-HERE'
+PROJECT_ID = 'ir-ass3-414111'
 
 
 def get_bucket(bucket_name):
@@ -104,17 +103,13 @@ class InvertedIndex:
         # stores total frequency per term
         self.term_total = Counter()
         # stores inverse document frequency per term
-        self.idf = defaultdict(float)
-        self.idf_bm25 = defaultdict(float)
-        # stores PageRank score per document
-        self.pagerank = defaultdict(float) if page_rank is None else page_rank
-        # stores normalized PageRank score per document
-        self.pagerank_normalized = defaultdict(float) if page_rank is None else self.get_normalized_page_rank()
-        # stores posting list per term while building the index (internally), 
+        self.idf = defaultdict(float)  # One time only after whole corpus has been loaded
+        self.idf_bm25 = defaultdict(float)  # One time only after whole corpus has been loaded
+        # stores posting list per term while building the index (internally),
         # otherwise too big to store in memory.
         self._posting_list = defaultdict(list)
         # stores document length per document
-        self.doc_len = defaultdict(int)
+        self.doc_len = defaultdict(int)  # Added manually
         # mapping a term to posting file locations, which is a list of 
         # (file_name, offset) pairs. Since posting lists are big we are going to
         # write them to disk and just save their location in this list. We are 
@@ -123,25 +118,8 @@ class InvertedIndex:
         # the number of bytes from the beginning of the file where the posting list
         # starts. 
         self.posting_locs = defaultdict(list)
-        self.corpus_size = 0
-        self.avdl = 0
-
-        for doc_id, tokens in docs.items():
-            self.add_doc(doc_id, tokens)
-
-    def add_doc(self, doc_id, tokens):
-        """ Adds a document to the index with a given `doc_id` and tokens. It counts
-            the tf of tokens, then update the index (in memory, no storage 
-            side-effects).
-        """
-        raise NotImplementedError
-        self.__corpus_size += 1
-        w2cnt = Counter(tokens)
-        self.term_total.update(w2cnt)
-        self.doc_len[doc_id] = sum(w2cnt.values())
-        for w, cnt in w2cnt.items():
-            self.df[w] = self.df.get(w, 0) + 1
-            self._posting_list[w].append((doc_id, cnt))
+        self.corpus_size = 0 # Added manually
+        self.average_doc_length = 0  # Added manually
 
     def get_idf(self):
         """ Calculate the inverse document frequency of each term in the index.
@@ -163,13 +141,6 @@ class InvertedIndex:
         """ Returns the normalized term frequency of term `w` in document `doc_id`.
         """
         return self._posting_list[w][doc_id] / self.doc_len[doc_id]
-
-    def get_normalized_page_rank(self):
-        """ Returns the normalized page rank of all of the documents
-        """
-        scores = list(self.pagerank.values())
-        robust_measure = np.percentile(scores, 99.995)
-        return {doc_id: min(score / robust_measure, 1.0) for doc_id, score in self.pagerank.items()}
 
     def write_index(self, base_dir, name, bucket_name=None):
         """ Write the in-memory index to disk. Results in the file: 
