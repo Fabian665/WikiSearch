@@ -2,7 +2,7 @@ import nltk
 from gensim.parsing.porter import PorterStemmer
 from nltk.corpus import stopwords
 import re
-from math import sqrt
+from math import sqrt, log
 
 from BM25 import BM25
 from utils import *
@@ -71,7 +71,7 @@ class Search:
 
         adjusted_pagerank = sqrt(pagerank + 1)
         adjusted_bm25_score = (bm25_score ** 3)
-        adjusted_pageviews = page_views
+        adjusted_pageviews = log(page_views, 2)
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
 
 
@@ -101,10 +101,10 @@ class Search:
         }
 
         bm25_title = BM25(token_pl_title, self.inverted_title, k1=1.1, b=0.5)
-        bm25_text = BM25(token_pl_text, self.inverted_text, k1=1.2, b=0.5)
+        bm25_text = BM25(token_pl_text, self.inverted_text, k1=1.2, b=0.45)
 
         scores_title = bm25_title.calculate_bm25()
-        # bm25_title = list(map(lambda x: (x[0], x[1]), bm25_title))
+        scores_title = list(map(lambda x: (x[0], x[1]), scores_title))
         scores_text = bm25_text.calculate_bm25()
         # bm25_text = list(map(lambda x: (x[0], x[1]), bm25_text))
         print('reduce together')
