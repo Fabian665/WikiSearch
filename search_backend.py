@@ -66,9 +66,9 @@ class Search:
         k1, b = 1.2, 0.5
         return self.calculate_bm25_per_term(token, doc_id_tf, self.inverted_text, k1=k1, b=b)
     
-    def weights(self, doc_id, bm25_score):
-        pagerank = self.pagerank.get(doc_id, 0.2)
-        page_views = self.page_views.get(doc_id, 3.7e-6)
+    def weights(self, doc_id, bm25_score, def_rank=0.2, def_views=3.7e-6):
+        pagerank = self.pagerank.get(doc_id, def_rank)
+        page_views = self.page_views.get(doc_id, def_views)
 
         adjusted_pagerank = sqrt(pagerank + 1)
         adjusted_bm25_score = (bm25_score ** 3)
@@ -81,13 +81,13 @@ class Search:
             token: self.retrieve_posting_list(token, bucket_name, inverted)
             for token in tokens
         }
-        bm25 = BM25(token_pl, inverted, k1=kwargs['k1'], b=kwargs['b'])
+        bm25 = BM25(token_pl, inverted, k1=kwargs['k1'], b=kwargs['b'], penalty=kwargs['pen'])
         scores = bm25.calculate_bm25()
         if 'func' in kwargs:
             scores = list(map(lambda x: (x[0], kwargs['func'](x[1])), scores))
         return scores
 
-    def search_query(self, query: str):
+    def search_query(self, query: str, **kwargs):
         """Query the inverted index.
         Args:
             query: the query string
@@ -104,9 +104,16 @@ class Search:
         tokens = [token for token in tokens if token not in self.all_stopwords]
         stemmed_tokens = [stemmer.stem(token) for token in tokens]
         print('pl')
+
+        text_k1 = kwargs['text_k1']
+        text_b = kwargs['text_b']
+        title_k1 = kwargs['title_k1']
+        title_b = kwargs['title_b']
+        title_weight = kwargs['title_weight']
+        penalize_unm = kwargs['penalize_unm']
         
-        scores_text = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_text, k1=1.2, b=0.45)
-        scores_title = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_title, k1=1.1, b=0.5, func=lambda x: x / 1.25)
+        scores_text = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_text, k1=text_k1, b=text_b, pen=penalize_unm)
+        scores_title = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_title, k1=title_k1, b=title_b, func=lambda x: x / title_weight, pen=penalize_unm)
 
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])
