@@ -7,8 +7,8 @@ from math import sqrt, log
 from BM25 import BM25
 from utils import *
 
-
 nltk.download('stopwords')
+
 
 class Search:
     STEM_BUCKET_NAME = 'bgu-ir-ass3-fab-stem'
@@ -65,7 +65,7 @@ class Search:
         """
         k1, b = 1.2, 0.5
         return self.calculate_bm25_per_term(token, doc_id_tf, self.inverted_text, k1=k1, b=b)
-    
+
     def weights(self, doc_id, bm25_score, def_rank=0.2, def_views=3.7e-6):
         pagerank = self.pagerank.get(doc_id, def_rank)
         page_views = self.page_views.get(doc_id, def_views)
@@ -74,7 +74,6 @@ class Search:
         adjusted_bm25_score = (bm25_score ** 3)
         adjusted_pageviews = log(page_views, 2)
         return adjusted_pagerank * adjusted_bm25_score * adjusted_pageviews
-
 
     def get_scores(self, tokens, bucket_name, inverted, **kwargs):
         token_pl = {
@@ -111,13 +110,27 @@ class Search:
         title_b = kwargs['title_b']
         title_weight = kwargs['title_weight']
         penalize_unm = kwargs['penalize_unm']
-        
-        scores_text = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_text, k1=text_k1, b=text_b, pen=penalize_unm)
-        scores_title = self.get_scores(stemmed_tokens, self.STEM_BUCKET_NAME, self.inverted_title, k1=title_k1, b=title_b, func=lambda x: x / title_weight, pen=penalize_unm)
+
+        scores_text = self.get_scores(
+            stemmed_tokens,
+            self.STEM_BUCKET_NAME,
+            self.inverted_text,
+            k1=text_k1,
+            b=text_b,
+            pen=penalize_unm,
+        )
+        scores_title = self.get_scores(
+            stemmed_tokens,
+            self.STEM_BUCKET_NAME,
+            self.inverted_title,
+            k1=title_k1,
+            b=title_b,
+            func=lambda x: x / title_weight,
+            pen=penalize_unm
+        )
         if len(scores_text) > 100_000:
             sorted_scores = sorted(scores_text, key=lambda x: x[1], reverse=True)
             scores_text = sorted(sorted_scores[:100_000], key=lambda x: x[0], reverse=True)
-
 
         print('reduce together')
         scores = reduce_by_key([scores_title, scores_text])

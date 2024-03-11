@@ -9,35 +9,41 @@ import numpy as np
 from math import log
 
 PROJECT_ID = 'YOUR-PROJECT-ID-HERE'
+
+
 def get_bucket(bucket_name):
     return storage.Client(PROJECT_ID).bucket(bucket_name)
+
 
 def _open(path, mode, bucket=None):
     if bucket is None:
         return open(path, mode)
     return bucket.blob(path).open(mode)
 
-# Let's start with a small block size of 30 bytes just to test things out. 
+
+# Let's start with a small block size of 30 bytes just to test things out.
 BLOCK_SIZE = 1999998
+
 
 class MultiFileWriter:
     """ Sequential binary writer to multiple files of up to BLOCK_SIZE each. """
+
     def __init__(self, base_dir, name, bucket_name=None):
         self._base_dir = Path(base_dir)
         self._name = name
         self._bucket = None if bucket_name is None else get_bucket(bucket_name)
-        self._file_gen = (_open(str(self._base_dir / f'{name}_{i:03}.bin'), 
-                                'wb', self._bucket) 
+        self._file_gen = (_open(str(self._base_dir / f'{name}_{i:03}.bin'),
+                                'wb', self._bucket)
                           for i in itertools.count())
         self._f = next(self._file_gen)
-           
+
     def write(self, b):
         locs = []
         while len(b) > 0:
             pos = self._f.tell()
             remaining = BLOCK_SIZE - pos
             # if the current file is full, close and open a new one.
-            if remaining == 0:  
+            if remaining == 0:
                 self._f.close()
                 self._f = next(self._file_gen)
                 pos, remaining = 0, BLOCK_SIZE
@@ -50,8 +56,10 @@ class MultiFileWriter:
     def close(self):
         self._f.close()
 
+
 class MultiFileReader:
     """ Sequential binary reader of multiple files of up to BLOCK_SIZE each. """
+
     def __init__(self, base_dir, bucket_name=None):
         self._base_dir = PurePosixPath(base_dir)
         self._bucket = None if bucket_name is None else get_bucket(bucket_name)
@@ -69,21 +77,22 @@ class MultiFileReader:
             b.append(f.read(n_read))
             n_bytes -= n_read
         return b''.join(b)
-  
+
     def close(self):
         for f in self._open_files.values():
             f.close()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
-        return False 
-
-TUPLE_SIZE = 6       # We're going to pack the doc_id and tf values in this 
-                     # many bytes.
-TF_MASK = 2 ** 16 - 1 # Masking the 16 low bits of an integer
+        return False
 
 
-class InvertedIndex:  
+TUPLE_SIZE = 6  # We're going to pack the doc_id and tf values in this
+# many bytes.
+TF_MASK = 2 ** 16 - 1  # Masking the 16 low bits of an integer
+
+
+class InvertedIndex:
     def __init__(self, docs={}, page_rank=None):
         """ Initializes the inverted index and add documents to it (if provided).
         Parameters:
@@ -138,15 +147,15 @@ class InvertedIndex:
         """ Calculate the inverse document frequency of each term in the index.
         """
         return {w: log(self.corpus_size / df) for w, df in self.df.items()}
-    
+
     def get_idf_bm25(self):
         """ Calculate the inverse document frequency of each term in the index.
         """
-        return {w: log((self.corpus_size + 1)/ df) for w, df in self.df.items()}
+        return {w: log((self.corpus_size + 1) / df) for w, df in self.df.items()}
 
     def set_idf(self):
         self.idf = self.get_idf()
-        
+
     def set_idf_bm25(self):
         self.idf_bm25 = self.get_idf_bm25()
 
@@ -154,7 +163,7 @@ class InvertedIndex:
         """ Returns the normalized term frequency of term `w` in document `doc_id`.
         """
         return self._posting_list[w][doc_id] / self.doc_len[doc_id]
-    
+
     def get_normalized_page_rank(self):
         """ Returns the normalized page rank of all of the documents
         """
@@ -193,8 +202,8 @@ class InvertedIndex:
                 b = reader.read(locs, self.df[w] * TUPLE_SIZE)
                 posting_list = []
                 for i in range(self.df[w]):
-                    doc_id = int.from_bytes(b[i*TUPLE_SIZE:i*TUPLE_SIZE+4], 'big')
-                    tf = int.from_bytes(b[i*TUPLE_SIZE+4:(i+1)*TUPLE_SIZE], 'big')
+                    doc_id = int.from_bytes(b[i * TUPLE_SIZE:i * TUPLE_SIZE + 4], 'big')
+                    tf = int.from_bytes(b[i * TUPLE_SIZE + 4:(i + 1) * TUPLE_SIZE], 'big')
                     posting_list.append((doc_id, tf))
                 yield w, posting_list
 
@@ -206,8 +215,8 @@ class InvertedIndex:
             locs = self.posting_locs[w]
             b = reader.read(locs, self.df[w] * TUPLE_SIZE)
             for i in range(self.df[w]):
-                doc_id = int.from_bytes(b[i*TUPLE_SIZE:i*TUPLE_SIZE+4], 'big')
-                tf = int.from_bytes(b[i*TUPLE_SIZE+4:(i+1)*TUPLE_SIZE], 'big')
+                doc_id = int.from_bytes(b[i * TUPLE_SIZE:i * TUPLE_SIZE + 4], 'big')
+                tf = int.from_bytes(b[i * TUPLE_SIZE + 4:(i + 1) * TUPLE_SIZE], 'big')
                 posting_list.append((doc_id, tf))
         return posting_list
 
@@ -215,9 +224,9 @@ class InvertedIndex:
     def write_a_posting_list(b_w_pl, base_dir, bucket_name=None):
         posting_locs = defaultdict(list)
         bucket_id, list_w_pl = b_w_pl
-        
+
         with closing(MultiFileWriter(base_dir, bucket_id, bucket_name)) as writer:
-            for w, pl in list_w_pl: 
+            for w, pl in list_w_pl:
                 # convert to bytes
                 b = b''.join([(doc_id << 16 | (tf & TF_MASK)).to_bytes(TUPLE_SIZE, 'big')
                               for doc_id, tf in pl])
