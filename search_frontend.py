@@ -33,7 +33,14 @@ def search():
     if len(query) == 0:
       return jsonify(res)
     # BEGIN SOLUTION
-    res = search_query.search_query(query)
+    res = search_query.search_query(query,
+                                    text_k1 = 1.2,
+                                    text_b = 0.45,
+                                    title_k1 = 1.1,
+                                    title_b = 0.5,
+                                    title_weight = 5,
+                                    penalize_unm = 0.75,
+                                    )
     [(doc_id, search.doc_title[doc_id]) for doc_id, _ in res]
     # END SOLUTION
     return jsonify(res)
